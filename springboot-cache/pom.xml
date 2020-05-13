@@ -11,4 +11,23 @@
     <artifactId>springboot-cache</artifactId>
     <name>springboot-cache</name>
 
+    <dependencies>
+
+        <!-- springboot cache -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
+        </dependency>
+
+        <!-- caffeine -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
+    </dependencies>
 </project>
