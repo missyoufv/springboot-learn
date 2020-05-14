@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.duwei.springboot.dao.UserMapper">
+    <resultMap id="BaseResultMap" type="cn.duwei.springboot.entity.SysUser">
+        <id column="id" jdbcType="INTEGER" property="id" />
+        <result column="login_name" jdbcType="VARCHAR" property="loginName" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="password" jdbcType="VARCHAR" property="password" />
+        <result column="salt" jdbcType="VARCHAR" property="salt" />
+        <result column="register_date" jdbcType="TIMESTAMP" property="registerDate" />
+        <result column="email" jdbcType="VARCHAR" property="email" />
+        <result column="phone" jdbcType="VARCHAR" property="phone" />
+        <result column="mobile" jdbcType="VARCHAR" property="mobile" />
+        <result column="user_type" jdbcType="CHAR" property="userType" />
+        <result column="login_ip" jdbcType="VARCHAR" property="loginIp" />
+        <result column="login_date" jdbcType="TIMESTAMP" property="loginDate" />
+        <result column="create_by" jdbcType="INTEGER" property="createBy" />
+        <result column="create_date" jdbcType="TIMESTAMP" property="createDate" />
+        <result column="update_by" jdbcType="INTEGER" property="updateBy" />
+        <result column="update_date" jdbcType="TIMESTAMP" property="updateDate" />
+        <result column="remarks" jdbcType="VARCHAR" property="remarks" />
+        <result column="del_flag" jdbcType="CHAR" property="delFlag" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+    id, login_name, `name`, `password`, salt, register_date, email, phone, mobile, user_type,
+    login_ip, login_date, create_by, create_date, update_by, update_date, remarks, del_flag
+  </sql>
+
+    <select id="getUserList" resultMap="BaseResultMap">
+    select * from sys_user limit 0,5
+  </select>
+</mapper>
