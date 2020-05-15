@@ -7,7 +7,8 @@ import org.springframework.cache.annotation.EnableCaching;
 /**
  * 缓存相关功能模块，功能点如下：
  *      1、springboot 整合caffeine
- *
+ *      2、通过DelayQueue、Redis 等实现延时队列
+ *      3、多级缓存搭配使用，存储数据
  *
  * Spring缓存支持
  * Spring定义了org.springframework.cache.CacheManager 和 org.springframework.cache.Cache 接口来统一不同缓存技术。 其中CacheManager是Spring提供的各种缓存技术抽象接口，

@@ -32,12 +32,19 @@ public class DelayQueueController {
     }
 
     /**
-     * 通过redis实现延时队列
+     * 通过redis 的zset数据结构实现延时队列
      * @return
      */
     @GetMapping("/redis/show")
     public String redisShow() {
         delayQueueService.invoke_delayQueue_redis();
+        return "SUCCESS";
+    }
+
+
+    @GetMapping("/redis/test")
+    public String redisTest() {
+        delayQueueService.invoke_redis_test();
         return "SUCCESS";
     }
 }

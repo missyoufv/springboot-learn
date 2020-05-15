@@ -114,4 +114,15 @@ public class DelayQueueService {
         }
 
     }
+
+    /**
+     * redis验证
+     */
+    public void invoke_redis_test() {
+        redisUtil.zsetAdd("zaddTest", "a", 1);
+        redisUtil.zsetAdd("zaddTest", "b", 3);
+        redisUtil.zsetAdd("zaddTest", "c", 2);
+        redisUtil.zsetAdd("zaddTest", "d", -1);
+        System.out.println(redisUtil.zRangeByScore("zaddTest", -1, 3, 0, 2));
+    }
 }
