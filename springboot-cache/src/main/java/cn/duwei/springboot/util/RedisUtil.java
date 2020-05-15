@@ -9,12 +9,14 @@ import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
 @Component
 @Slf4j
 public class RedisUtil {
@@ -22,9 +24,11 @@ public class RedisUtil {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-    /** -------------------key相关操作--------------------- */
+    /**
+     * -------------------key相关操作---------------------
+     */
 
-    public void pipeLine(Map<String, String> map){
+    public void pipeLine(Map<String, String> map) {
         try {
             redisTemplate.executePipelined((RedisCallback<Long>) redisConnection -> {
                 StringRedisConnection stringRedisConnection = (StringRedisConnection) redisConnection;
@@ -40,10 +44,11 @@ public class RedisUtil {
 
     /**
      * 批量操作，可设置过期时间
-     * @param map 命令
+     *
+     * @param map     命令
      * @param seconds 过期时间
      */
-    public void pipeLine(Map<String, String> map,long seconds){
+    public void pipeLine(Map<String, String> map, long seconds) {
         try {
             redisTemplate.executePipelined((RedisCallback<Long>) redisConnection -> {
                 StringRedisConnection stringRedisConnection = (StringRedisConnection) redisConnection;
@@ -57,12 +62,12 @@ public class RedisUtil {
         }
     }
 
-    public void pipeLineDelete(List<String> commandList){
+    public void pipeLineDelete(List<String> commandList) {
         try {
             redisTemplate.executePipelined((RedisCallback<Long>) redisConnection -> {
                 StringRedisConnection stringRedisConnection = (StringRedisConnection) redisConnection;
                 stringRedisConnection.openPipeline();
-                commandList.forEach(command-> stringRedisConnection.del(command));
+                commandList.forEach(command -> stringRedisConnection.del(command));
                 stringRedisConnection.closePipeline();
                 return null;
             });
@@ -71,6 +76,7 @@ public class RedisUtil {
         }
 
     }
+
     /**
      * 删除key
      *
@@ -225,7 +231,9 @@ public class RedisUtil {
         return redisTemplate.type(key);
     }
 
-    /** -------------------string相关操作--------------------- */
+    /**
+     * -------------------string相关操作---------------------
+     */
 
 
     public void setKeyValue(String key, String value) {
@@ -270,15 +278,15 @@ public class RedisUtil {
         return redisTemplate.opsForList().size(key);
     }
 
-    public long listRightPushAll(String key, Collection<String> values){
+    public long listRightPushAll(String key, Collection<String> values) {
         return redisTemplate.opsForList().rightPushAll(key, values);
     }
 
-    public long listRightPushAll(String key, Set<String> values){
+    public long listRightPushAll(String key, Set<String> values) {
         return redisTemplate.opsForList().rightPushAll(key, values);
     }
 
-    public List<String> listRange(String key, int start, int end){
+    public List<String> listRange(String key, int start, int end) {
         return redisTemplate.opsForList().range(key, start, end);
     }
 
@@ -290,15 +298,15 @@ public class RedisUtil {
         redisTemplate.opsForHash().putAll(key, map);
     }
 
-    public void hashSet(String key, String hashKey, Object value){
+    public void hashSet(String key, String hashKey, Object value) {
         redisTemplate.opsForHash().put(key, hashKey, JsonUtil.toJson(value));
     }
 
-    public String hashGet(String key, String hashKey){
-        return  (String) redisTemplate.opsForHash().get(key, hashKey);
+    public String hashGet(String key, String hashKey) {
+        return (String) redisTemplate.opsForHash().get(key, hashKey);
     }
 
-    public <T> T hashGet(String key, String hashKey, Class<T> clazz){
+    public <T> T hashGet(String key, String hashKey, Class<T> clazz) {
         String value = (String) redisTemplate.opsForHash().get(key, hashKey);
         return JsonUtil.toBean(value, clazz);
     }
@@ -313,6 +321,7 @@ public class RedisUtil {
 
 
     // -------------------------zset(sortedSet)-----------------------------
+
     /**
      * <pre>
      * Add specified member with the specified score to the sorted set stored at key.
@@ -380,13 +389,64 @@ public class RedisUtil {
         return result;
     }
 
-    public Set<String> hashKeys(String redisKey){
-        HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
-        Set<String> keys = opsForHash.keys(redisKey);
-        return  keys;
+    /**
+     * 获取变量指定区间的元素
+     *
+     * @param key
+     * @param start
+     * @param end
+     * @return
+     */
+    public Set<String> zRangeByScore(String key, long start, long end) {
+        Set<String> range = redisTemplate.opsForZSet().range(key, start, end);
+        return range;
     }
 
-    public List<String> hashValues(String redisKey){
+    /**
+     * 统计集合元素个数
+     * @param key
+     * @return
+     */
+    public long zCount(String key) {
+        return redisTemplate.opsForZSet().zCard(key);
+    }
+    /**
+     * 返回有序集合中指定分数区间的成员列表
+     *
+     * @param key
+     * @param min
+     * @param max
+     * @return
+     */
+    public Set<String> zRangeByScore(String key, Long min, long max) {
+        return redisTemplate.opsForZSet().rangeByScore(key, min, max);
+    }
+
+
+    /**
+     * 返回有序集合中指定分数区间的成员列表
+     * @param key
+     * @param min
+     * @param max
+     * @param offset
+     * @param count
+     * @return
+     */
+    public Set<String> zRangeByScore(String key, long min, long max, long offset, long count) {
+        return redisTemplate.opsForZSet().rangeByScore(key, min, max, offset, count);
+    }
+
+    public Set<String> hashKeys(String redisKey) {
+        HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
+        Set<String> keys = opsForHash.keys(redisKey);
+        return keys;
+    }
+
+
+    public void zRem(String key, String value) {
+        redisTemplate.opsForZSet().remove(key, value);
+    }
+    public List<String> hashValues(String redisKey) {
         HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
         List<String> values = opsForHash.values(redisKey);
         return values;
@@ -394,12 +454,13 @@ public class RedisUtil {
 
     /**
      * zgu
+     *
      * @param script
      * @param params
      * @param args
      * @return
      */
-    public Object executeLua(String script, List<String> params, List<String> args) throws Exception{
+    public Object executeLua(String script, List<String> params, List<String> args) throws Exception {
         try {
             Object result = redisTemplate.execute(RedisScript.of(script, String.class), params, args.toString());
             return result;

@@ -1,4 +1,4 @@
-package cn.duwei.springboot.delayQueue;
+package cn.duwei.springboot.entity;
 
 import lombok.Data;
 
