@@ -1,20 +1,194 @@
 package cn.duwei.springboot.jdk;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.Connection;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 生产者
+ *
+ *  声明交换机和队列的属性有 durable 持久化 autoDelete 自动删除 exclusive 排他 队列仅当前连接可见
  */
 public class RabbitMqProducter {
 
-    public static void main(String[] args)  {
+    public static void main(String[] args) throws IOException {
 
 //        invoke_push_message();
-        invoke_push_message_toNoBindQueue();
-        invoke_push_message_toBindQueue();
+//        invoke_push_message_toExhange();
+//        invoke_push_message_toNoBindQueue();
+//        invoke_push_message_toBindQueue();
+
+//        invoke_push_message_setting_ttl();
+
+//        invoke_push_message_dlx();
+
+//        invoke_push_message_prority();
+
+//        invoke_push_message_transaction();
+
+        invoke_push_message_confirm();
+
+    }
+
+    /**
+     * 通过confirm确认机制 保证消息投递可靠性
+     */
+    private static void invoke_push_message_confirm() throws IOException{
+
+        Connection connection = ConnectionFactoryUtil.getConnection();
+        Channel channel = connection.createChannel();
+
+        channel.queueDeclare("test_confirm_queue", false, false, false, null);
+
+
+        try {
+            channel.confirmSelect();
+            channel.basicPublish("", "test_confirm_queue", null, "confirm comit message".getBytes());
+//            if (channel.waitForConfirms()) {
+//                System.out.println("消息发送成功");
+//            }
+
+            // 异步监听
+            channel.addConfirmListener(new ConfirmListener() {
+                @Override
+                public void handleAck(long deliveryTag, boolean multiple) throws IOException {
+                    System.out.println("消息发送成功");
+                }
+
+                @Override
+                public void handleNack(long deliveryTag, boolean multiple) throws IOException {
+                    System.out.println("消息发送失败");
+                }
+            });
+
+        } catch (Exception ex) {
+            channel.txRollback();
+            System.out.println("消息发送失败");
+        }
+        ConnectionFactoryUtil.close(connection);
+    }
+
+    /**
+     * 通过事务模式消息投递的可靠性
+     */
+    private static void invoke_push_message_transaction() throws IOException{
+
+        Connection connection = ConnectionFactoryUtil.getConnection();
+        Channel channel = connection.createChannel();
+
+        channel.queueDeclare("test_transaction_queue", false, false, false, null);
+
+
+        try {
+            channel.txSelect();
+            channel.basicPublish("", "test_transaction_queue", null, "transaction comit message".getBytes());
+            channel.txCommit();
+            System.out.println("消息发送成功");
+        } catch (Exception ex) {
+            channel.txRollback();
+            System.out.println("消息发送失败");
+        }
+        ConnectionFactoryUtil.close(connection);
+
+    }
+
+    /**
+     * 优先级别高的消息、优先投递
+     */
+    private static void invoke_push_message_prority() throws IOException{
+
+        Connection connection = ConnectionFactoryUtil.getConnection();
+        Channel channel = connection.createChannel();
+
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-max-priority", 10);
+        // 通过队列、指定消息的过期时间
+        channel.queueDeclare("test_priority_queue", false, false, false, args);
+
+
+        for (int i = 0; i < 5; i++) {
+            String message = "第" + i + "条消息入队";
+            AMQP.BasicProperties properties = new AMQP.BasicProperties().builder()
+                    .deliveryMode(2) // 持久化
+                    .contentEncoding("UTF-8")
+                    .priority(i)
+                    .build();
+            channel.basicPublish("","test_priority_queue",properties,message.getBytes());
+        }
+        ConnectionFactoryUtil.close(connection);
+    }
+
+    /**
+     * 发送消息变成死信、进入死信交换机
+     */
+    private static void invoke_push_message_dlx() throws IOException{
+
+        Connection connection = ConnectionFactoryUtil.getConnection();
+        Channel channel = connection.createChannel();
+
+        // 通过队列、指定消息的过期时间
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-max-length", 3);
+        args.put("x-dead-letter-exchange", "DLX_EXCHANGE");
+        channel.queueDeclare("test_dlx_queue", false, false, false, args);
+
+        channel.exchangeDeclare("DLX_EXCHANGE", "topic", false, false, null);
+
+        channel.queueDeclare("DLX_QUEUE", false, false, false, null);
+
+        channel.queueBind("DLX_QUEUE", "DLX_EXCHANGE", "#");
+
+
+        for (int i = 0; i < 5; i++) {
+            String message = "第" + i + "条消息入队";
+            channel.basicPublish("","test_dlx_queue",null,message.getBytes());
+        }
+        ConnectionFactoryUtil.close(connection);
+
+
+    }
+
+    /**
+     * 设置发送消息的过期时间
+     */
+    private static void invoke_push_message_setting_ttl() throws IOException{
+
+        Connection connection = ConnectionFactoryUtil.getConnection();
+        Channel channel = connection.createChannel();
+
+        String message = " hello world ,rabbitmq ttl msg";
+
+        // 通过队列、指定消息的过期时间
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-message-ttl", 6000);
+        channel.queueDeclare("test_ttl_queue", false, false, false, args);
+
+        // 单独对消息设置过期时间
+        AMQP.BasicProperties properties = new AMQP.BasicProperties().builder()
+                .deliveryMode(2) // 持久化
+                .contentEncoding("UTF-8")
+                .expiration("10000") // 过期时间 单位是毫秒
+                .build();
+
+        channel.basicPublish("","test_ttl_queue",properties,message.getBytes());
+        ConnectionFactoryUtil.close(connection);
+    }
+
+    /**
+     * 根据已近创建好的交换机和队列绑定关系，直接将消息发送到交互及
+     */
+    private static void invoke_push_message_toExhange() throws IOException{
+
+        Connection connection = ConnectionFactoryUtil.getConnection();
+        Channel channel = connection.createChannel();
+
+        channel.basicPublish("simpleExchange","mq",null,"fighing".getBytes());
+
     }
 
     /**

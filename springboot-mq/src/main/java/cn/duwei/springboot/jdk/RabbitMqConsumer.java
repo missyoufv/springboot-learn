@@ -10,10 +10,43 @@ import java.io.IOException;
 public class RabbitMqConsumer {
 
 
-    public static void main(String[] args)  {
-        invoke_consumer_message_autoAck();
+    public static void main(String[] args) throws IOException {
+//        invoke_consumer_message_autoAck();
+//
+//        invoke_consumer_message();
 
-        invoke_consumer_message();
+        invoke_consumer_message_bindQueue();
+    }
+
+    /**
+     * 消费者消费消息，创建队列和交换机的绑定关系
+     */
+    private static void invoke_consumer_message_bindQueue() throws IOException{
+        Connection connection = ConnectionFactoryUtil.getConnection();
+
+        Channel channel = connection.createChannel();
+
+        String exchangeName  = "simpleExchange";
+        channel.exchangeDeclare(exchangeName, "direct", false, false, null);
+
+        String queueName = "simpleQueue";
+        channel.queueDeclare(queueName, false, false, false, null);
+
+        channel.queueBind(queueName, exchangeName, "mq");
+        System.out.println(" waiting the message ....");
+        Consumer consumer = new DefaultConsumer(channel){
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+
+                String message = new String(body, "UTF-8");
+
+                System.out.println("received message : " + message);
+                System.out.println(" consumerTag : " + consumerTag);
+                System.out.println(" deliveryTag : " + envelope.getDeliveryTag());
+            }
+        };
+
+        channel.basicConsume(queueName, true, consumer);
 
 
     }
